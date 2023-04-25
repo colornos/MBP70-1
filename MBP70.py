@@ -2,25 +2,42 @@ from __future__ import print_function
 import sys
 import pygatt.backends
 import logging
-from configparser import ConfigParser
+from ConfigParser import SafeConfigParser
 import time
 import subprocess
 from struct import *
 from binascii import hexlify
 import os
-import threading
-import requests
+import thread
 
 # Interesting characteristics
 Char_temperature = '00002A1C-0000-1000-8000-00805f9b34fb'  # temperature data
 
+'''
+The decode functions Read Motorola MBP70 thermometer  hex Indication and 
+decodes temp values from hex data string.
+Each function receives the hex handle and bytevalues and
+return a dictionary with the decoded data
+'''
 
 def sanitize_timestamp(timestamp):
+
     retTS = time.time()
+
     return retTS
 
-
 def decodetemperature(handle, values):
+    '''
+    decodetemperature
+    Handle: 0x0d
+    Byte[0] = 0x02
+    Returns:
+        valid (True, False)
+        temperature (0..200)
+	timestamp (unix timestamp date and time of measurement)
+        note: in python 2.7 to force results to be floats,
+        devide by float.
+        '''
     data = unpack('<BHxxxxxxI', bytes(values[0:14]))
     retDict = {}
     retDict["valid"] = (data[0] == 0x02)
@@ -28,8 +45,14 @@ def decodetemperature(handle, values):
     retDict["timestamp"] = sanitize_timestamp(data[2])
     return retDict
 
-
 def processIndication(handle, values):
+    '''
+    Indication handler:
+    Receives indication and stores values into result Dict
+    (see decode functions for Dict definition)
+    handle: byte
+    value: bytearray
+    '''
     if handle == handle_temperature:
         result = decodetemperature(handle, values)
         if result not in temperaturedata:
@@ -40,16 +63,16 @@ def processIndication(handle, values):
     else:
         log.debug('Unhandled Indication encountered')
 
-
 def wait_for_device(devname):
     found = False
     while not found:
         try:
+            # wait for bpm to wake up and connect to it
             found = adapter.filtered_scan(devname)
         except pygatt.exceptions.BLEError:
+            # reset adapter when (see issue #33)
             adapter.reset()
     return
-
 
 def connect_device(address):
     device_connected = False
@@ -63,9 +86,9 @@ def connect_device(address):
             tries -= 1
     return device
 
-
 def init_ble_mode():
-    p = subprocess.Popen("sudo btmgmt le on", stdout=subprocess.PIPE, shell=True)
+    p = subprocess.Popen("sudo btmgmt le on", stdout=subprocess.PIPE,
+                         shell=True)
     (output, err) = p.communicate()
     if not err:
         log.info(output)
@@ -74,12 +97,16 @@ def init_ble_mode():
         log.info(err)
         return False
 
+'''
+Main program loop
+'''
 
-config = ConfigParser()
+config = SafeConfigParser()
 config.read('MBP70.ini')
 path = "plugins/"
 plugins = {}
 
+# set up logging
 numeric_level = getattr(logging,
                         config.get('Program', 'loglevel').upper(),
                         None)
@@ -96,6 +123,8 @@ ch.setLevel(numeric_level)
 formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(funcName)s %(message)s')
 ch.setFormatter(formatter)
 log.addHandler(ch)
+
+# Load configured plugins
 
 if config.has_option('Program', 'plugins'):
     config_plugins = config.get('Program', 'plugins').split(',')
@@ -118,11 +147,14 @@ device_model = config.get('TEMP', 'device_model')
 
 if device_model == 'MBP70':
     addresstype = pygatt.BLEAddressType.public
+    # time_offset is used to convert to unix standard
     time_offset = 0
 else:
     addresstype = pygatt.BLEAddressType.random
     time_offset = 0
-
+'''
+Start BLE comms and run that forever
+'''
 log.info('MBP70 Started')
 if not init_ble_mode():
     sys.exit()
@@ -137,14 +169,22 @@ while True:
         temperaturedata = []
         handle_temperature = device.get_handle(Char_temperature)
         continue_comms = True
-
+        '''
+        subscribe to characteristics and have processIndication
+        process the data received.
+        '''
         try:
             device.subscribe(Char_temperature,
                              callback=processIndication,
                              indication=True)
         except pygatt.exceptions.NotConnectedError:
             continue_comms = False
-
+        '''
+        Send the unix timestamp in little endian order preceded by 02 as
+        bytearray to handle 0x23. This will resync the scale's RTC.
+        While waiting for a response notification, which will never
+        arrive, the scale will emit 30 Indications on 0x1b and 0x1e each.
+        '''
         if continue_comms:
             log.info('Waiting for notifications for another 30 seconds')
             time.sleep(30)
@@ -154,11 +194,13 @@ while True:
                 log.info('Could not disconnect...')
 
             log.info('Done receiving data from temperature thermometer')
-
+            # process data if all received well
             if temperaturedata:
+                # Sort scale output by timestamp to retrieve most recent three results
                 temperaturedatasorted = sorted(temperaturedata, key=lambda k: k['timestamp'], reverse=True)
-
+                    
+                # Run all plugins found
                 for plugin in plugins.values():
-                    plugin.execute(config, temperaturedatasorted)
-            else:
-                log.error('Data received')
+                        plugin.execute(config, temperaturedatasorted)
+                else:
+                    log.error('Data received')
