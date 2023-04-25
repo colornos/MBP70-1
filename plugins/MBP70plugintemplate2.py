@@ -4,7 +4,7 @@ import sys
 import logging
 from configparser import ConfigParser
 import os
-import _thread as thread
+import threading
 import urllib3
 http = urllib3.PoolManager()
 
@@ -13,15 +13,14 @@ class Plugin:
     def __init__(self):
         return
 
-def execute(self, config, temperaturedata):
-    log = logging.getLogger(__name__)
-    log.info('Starting plugin: ' + __name__)
-    # Read ini file from same location as plugin resides, named [pluginname].ini
-    configfile = os.path.dirname(os.path.realpath(__file__)) + '/' + __name__ + '.ini'
-    pluginconfig = ConfigParser()
-    pluginconfig.read(configfile)
-    log.info('ini read from: ' + configfile)
-
+    def execute(self, config, temperaturedata):
+        log = logging.getLogger(__name__)
+        log.info('Starting plugin: ' + __name__)
+        
+        configfile = os.path.dirname(os.path.realpath(__file__)) + '/' + __name__ + '.ini'
+        pluginconfig = ConfigParser()
+        pluginconfig.read(configfile)
+        log.info('ini read from: ' + configfile)
     # Start plugin specifics here
 
     # Commented out as per request
