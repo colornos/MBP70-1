@@ -2,9 +2,9 @@
 # -*- coding: utf8 -*-
 import sys
 import logging
-from ConfigParser import SafeConfigParser
+from configparser import ConfigParser
 import os
-import thread
+import _thread as thread
 import urllib3
 http = urllib3.PoolManager()
 
