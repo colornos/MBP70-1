@@ -1,4 +1,4 @@
-import sys
+from __future__ import print_function
 import pygatt.backends
 import logging
 from configparser import ConfigParser
@@ -7,8 +7,7 @@ import subprocess
 from struct import *
 from binascii import hexlify
 import os
-import _thread as thread
-
+import sys
 # Interesting characteristics
 Char_temperature = '00002A1C-0000-1000-8000-00805f9b34fb'  # temperature data
 
