@@ -124,6 +124,7 @@ log.addHandler(ch)
 
 # Load configured plugins
 
+# Load configured plugins
 if config.has_option('Program', 'plugins'):
     config_plugins = config.get('Program', 'plugins').split(',')
     config_plugins = [plugin.strip(' ') for plugin in config_plugins]
@@ -198,11 +199,7 @@ while True:
                 temperaturedatasorted = sorted(temperaturedata, key=lambda k: k['timestamp'], reverse=True)
                     
                 # Run all plugins found
-		sys.path.insert(0, path)
-		for plugin in config_plugins:
-		    log.info('Loading plugin: %s' % plugin)
-		    mod = __import__(plugin)
-		    plugins[plugin] = mod.Plugin()
-		log.info('All plugins loaded.')
+                for plugin in plugins.values():
+                        plugin.execute(config, temperaturedatasorted)
                 else:
                     log.error('Data received')
