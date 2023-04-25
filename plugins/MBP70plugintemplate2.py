@@ -46,23 +46,23 @@ def execute(self, config, temperaturedata):
     # if f5.mode == 'r':
     #     contents5 = f5.read()
     
-     f6 = open("rfid.txt", "r")
-     if f6.mode == 'r':
-         contents6 = f6.read()
+    f6 = open("rfid.txt", "r")
+    if f6.mode == 'r':
+        contents6 = f6.read()
 
     # byte1 = str(contents1)
     # byte2 = str(contents2)
     # byte3 = str(contents3)
     # byte4 = str(contents4)
     # pin = str(contents5)
-     rfid = str(contents6)
+    rfid = str(contents6)
 
-     if (rfid == 0):
-        print("No card detected!")
+    if (rfid == 0):
+       print("No card detected!")
 
-     else:
+    else:
 
-        temperature = temperaturedata[0]['temperature']
-        r = http.request('POST', 'https://colornos.com/sensors/temperature.php', fields={"rfid": rfid, "one": temperature})
-        print(r.data)
-    log.info('Finished plugin: ' + __name__)
+       temperature = temperaturedata[0]['temperature']
+       r = http.request('POST', 'https://colornos.com/sensors/temperature.php', fields={"rfid": rfid, "one": temperature})
+       print(r.data)
+       log.info('Finished plugin: ' + __name__)
