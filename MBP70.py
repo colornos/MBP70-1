@@ -100,7 +100,7 @@ def init_ble_mode():
 Main program loop
 '''
 
-config = SafeConfigParser()
+config = ConfigParser()
 config.read('MBP70.ini')
 path = "plugins/"
 plugins = {}
