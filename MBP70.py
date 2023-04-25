@@ -1,14 +1,13 @@
-from __future__ import print_function
 import sys
 import pygatt.backends
 import logging
-from ConfigParser import SafeConfigParser
+from configparser import ConfigParser
 import time
 import subprocess
 from struct import *
 from binascii import hexlify
 import os
-import thread
+import _thread as thread
 
 # Interesting characteristics
 Char_temperature = '00002A1C-0000-1000-8000-00805f9b34fb'  # temperature data
