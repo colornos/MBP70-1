@@ -198,7 +198,11 @@ while True:
                 temperaturedatasorted = sorted(temperaturedata, key=lambda k: k['timestamp'], reverse=True)
                     
                 # Run all plugins found
-                for plugin in plugins.values():
-                        plugin.execute(config, temperaturedatasorted)
+		sys.path.insert(0, path)
+		for plugin in config_plugins:
+		    log.info('Loading plugin: %s' % plugin)
+		    mod = __import__(plugin)
+		    plugins[plugin] = mod.Plugin()
+		log.info('All plugins loaded.')
                 else:
                     log.error('Data received')
