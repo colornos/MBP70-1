@@ -10,8 +10,8 @@ http = urllib3.PoolManager()
 
 class Plugin:
 
-def __init__(self):
-    return
+    def __init__(self):
+        return
 
 def execute(self, config, temperaturedata):
     log = logging.getLogger(__name__)
